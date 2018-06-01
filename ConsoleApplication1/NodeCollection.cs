@@ -9,14 +9,29 @@ namespace NodeCollectionSolution
 {
     public class NodeCollection
     {
-        public Dictionary<string, int> nodes = new Dictionary<string, int>()
-        {
-            {"A", 100000 },
-            {"B", 100000 },
-            {"C", 100000 },
-            {"D", 100000 },
-            {"E", 100000 },
-            {"F", 100000 }
+        public const int INFINITY = 100000;
+
+        public Dictionary<string, Node> nodes = new Dictionary<string, Node>()
+        { 
+            {"A", new Node("A", INFINITY, "")},
+            {"B", new Node("B", INFINITY, "")},
+            {"C", new Node("C", INFINITY, "")},
+            {"D", new Node("D", INFINITY, "")},
+            {"E", new Node("E", INFINITY, "")},
+            {"F", new Node("F", INFINITY, "")}
         };
+
+        public Node findMinimalAdjacentNode()
+        {
+            Node minimum = new Node("default", INFINITY, "");
+            foreach(var node in nodes)
+            {
+                if (node.Value.cost < minimum.cost && node.Value.cost < INFINITY)
+                {
+                    minimum = node.Value;
+                }
+            }
+            return minimum;
+        }
     }
 }

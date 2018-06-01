@@ -11,19 +11,17 @@ namespace Network
 {
     class Program
     {
-      
+        public const int INFINITY = 100000; 
         static void Main(string[] args)
         {
-            ArrayList routers = new ArrayList();
+            List<Router> routers = new List<Router>();
             ArrayList hosts = new ArrayList();
             Console.WriteLine("Hello World");
             init(routers, hosts);
-
-            Console.WriteLine("Done");
             while (true) { }
         }
 
-        public static void init(ArrayList routers, ArrayList hosts)
+        public static void init(List<Router> routers, ArrayList hosts)
         {
             
             routers.Add(addRouter(new Dictionary<string, int> {
@@ -63,6 +61,24 @@ namespace Network
             hosts = new ArrayList();
             hosts.Add(new Host("1"));
             hosts.Add(new Host("2"));
+
+            if (true)
+            {
+                initLS(routers);
+
+                Router startRouter = new Router();
+
+                foreach (var router in routers)
+                {
+                    if (router.name == "A")
+                    {
+                        startRouter = router;
+                    }
+                }
+
+                Console.WriteLine("Done");
+                Console.WriteLine(startRouter.nodes.nodes["F"].route);
+            }
         }
 
         public static Router addRouter(Dictionary<string, int> nodes, string name, string hostName)
@@ -71,7 +87,8 @@ namespace Network
 
             foreach (var node in nodes)
             {
-                routerNodes.nodes[node.Key] = node.Value;
+                routerNodes.nodes[node.Key].cost = node.Value;
+                routerNodes.nodes[node.Key].route = node.Key;
             }
 
             routerNodes.nodes.Remove(name);
@@ -80,23 +97,53 @@ namespace Network
         }
 
 
-        public static void initLS()
+        public static void initLS(List<Router> routers)
         {
-            //1 Initialization:
-            //2 N = { A}
-            //3 for all nodes v
-            //4 if v adjacent to A
-            //5 then D(v) = c(A, v)
-            //6 else D(v) = ∞
-            //7
-            //8 Loop
-            //9 find w not in N such that D(w) is a minimum
-            //10 add w to N
-            //11 update D(v) for all v adjacent to w and not in N:
-            //12 D(v) = min(D(v), D(w) + c(w, v))
-            //13 /* new cost to v is either old cost to v or known
-            //14 shortest path cost to w plus cost from w to v */
-            //15 until all nodes in N
+            List<Node> visited = new List<Node>();          
+            visited.Add(new Node("A", 0, ""));
+
+            Router startRouter = new Router(); 
+
+            foreach (var router in routers)
+            {
+                if (router.name == "A")
+                {
+                    startRouter = router;
+                }
+            }
+
+            Node currentNode = startRouter.nodes.findMinimalAdjacentNode();
+
+            while (visited.Count < 7)
+            {
+                
+                Router currentRouter = new Router();
+
+                visited.Add(currentNode);
+
+                foreach (var router in routers)
+                {
+                    if (router.name == currentNode.name)
+                    {
+                        currentRouter = router;
+                    }
+                }
+
+                foreach(var node in currentRouter.nodes.nodes)
+                {
+                    if(node.Value.cost < INFINITY && !visited.Any(x => x.name == node.Value.name))
+                    {
+                        if(node.Value.cost + startRouter.nodes.nodes[currentNode.name].cost < startRouter.nodes.nodes[node.Value.name].cost)
+                        {
+                            startRouter.nodes.nodes[node.Value.name].cost = node.Value.cost + startRouter.nodes.nodes[currentNode.name].cost;
+                            startRouter.nodes.nodes[node.Value.name].route = startRouter.nodes.nodes[currentNode.name].route + node.Value.name;
+
+                        }   
+                    }
+                }
+                currentNode = currentRouter.nodes.findMinimalAdjacentNode();
+            }            
+      
         }
 
         public static  void initDV()
