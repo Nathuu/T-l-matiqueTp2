@@ -4,26 +4,28 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Collections;
-using RouterSolution;
 using NodeCollectionSolution;
 using HostSolution;
 
-namespace Reseau
+namespace Network
 {
     class Program
     {
-        ArrayList routers;
-        ArrayList hosts;
-        void Main(string[] args)
+      
+        static void Main(string[] args)
         {
+            ArrayList routers = new ArrayList();
+            ArrayList hosts = new ArrayList();
             Console.WriteLine("Hello World");
-            init();
+            init(routers, hosts);
 
+            Console.WriteLine("Done");
+            while (true) { }
         }
 
-        public void init()
+        public static void init(ArrayList routers, ArrayList hosts)
         {
-            routers = new ArrayList();
+            
             routers.Add(addRouter(new Dictionary<string, int> {
                 {"B", 5 },
                 {"D", 45 }
@@ -63,7 +65,7 @@ namespace Reseau
             hosts.Add(new Host("2"));
         }
 
-        public Router addRouter(Dictionary<string, int> nodes, string name, string hostName)
+        public static Router addRouter(Dictionary<string, int> nodes, string name, string hostName)
         {
             NodeCollection routerNodes = new NodeCollection();
 
@@ -78,7 +80,7 @@ namespace Reseau
         }
 
 
-        public void initLS()
+        public static void initLS()
         {
             //1 Initialization:
             //2 N = { A}
@@ -97,7 +99,7 @@ namespace Reseau
             //15 until all nodes in N
         }
 
-        public void initDV()
+        public static  void initDV()
         {
 
         }

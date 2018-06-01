@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using NodeCollectionSolution; 
 
-namespace RouterSolution
+namespace Network
 {
     public class Router
     {

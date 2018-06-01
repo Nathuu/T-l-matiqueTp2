@@ -9,6 +9,12 @@ namespace HostSolution
     public class Host
     {
         private string hostName;
+        static void Main(string[] args)
+        {
+            Console.WriteLine("Hello World");
+
+        }
+
         public Host(string hostName)
         {
             this.hostName = hostName;

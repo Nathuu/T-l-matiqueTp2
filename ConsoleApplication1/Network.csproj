@@ -44,24 +44,18 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Neighbour.cs" />
-    <Compile Include="Program.cs" />
+    <Compile Include="Network.cs" />
+    <Compile Include="NodeCollection.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Router.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\ConsoleApplication2\Router.csproj">
-      <Project>{b0039303-d2e7-48db-97a0-2572fb262ddd}</Project>
-      <Name>Router</Name>
-    </ProjectReference>
     <ProjectReference Include="..\Host\Host.csproj">
       <Project>{c46219c3-01ff-42f2-859b-761fe6a615a8}</Project>
       <Name>Host</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\NodeCollection\NodeCollection.csproj">
-      <Project>{ea9f3344-b075-4bde-9f5f-15916724cc4c}</Project>
-      <Name>NodeCollection</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
