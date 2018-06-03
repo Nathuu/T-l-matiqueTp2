@@ -5,13 +5,14 @@ using System.Collections;
 using HostSolution;
 using System.Net.Sockets;
 using System.Net;
+using System.Threading;
 
 namespace Network
 {
     class Program
     {
         public const int INFINITY = 100000; 
-        public enum PORTS { A=64000, B, C, D, E, F }
+        public enum PORTS { A=40000, B, C, D, E, F }
 
         static void Main(string[] args)
         {
@@ -59,15 +60,12 @@ namespace Network
                 {"E", 7}                
             }, "F", "2", new IPEndPoint(IPAddress.Parse("127.0.0.1"), (int)PORTS.F)));
 
-            hosts = new ArrayList
-            {
-                new Host("1"),
-                new Host("2")
-            };
-
+            RouterStartListening(routers);
+            ConnectRouters(routers);
+            
             if (true)//ls or dv
             {
-                initLS(routers);
+                InitLS(routers);
 
                 Router startRouter = new Router();
 
@@ -75,6 +73,15 @@ namespace Network
 
                 Console.WriteLine("Done");
                 Console.WriteLine(startRouter.rTable.entries["F"].route);
+            }
+        }
+
+        private static void RouterStartListening(List<Router> routers)
+        {
+            foreach(var router in routers)
+            {
+                Thread th = new Thread(router.Listen);
+                th.Start();
             }
         }
 
@@ -118,7 +125,7 @@ namespace Network
             routers.Find(x => x.name == "F").Connect("E", "127.0.0.1", (int)PORTS.E);
         }
         
-        public static void initLS(List<Router> routers)
+        public static void InitLS(List<Router> routers)
         {
             List<Entry> visited = new List<Entry> { new Entry("A", 0, "") };
 
