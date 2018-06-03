@@ -1,152 +1,162 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Collections;
-using NodeCollectionSolution;
 using HostSolution;
+using System.Net.Sockets;
+using System.Net;
 
 namespace Network
 {
     class Program
     {
         public const int INFINITY = 100000; 
+        public enum PORTS { A=64000, B, C, D, E, F }
+
         static void Main(string[] args)
         {
             List<Router> routers = new List<Router>();
             ArrayList hosts = new ArrayList();
             Console.WriteLine("Hello World");
-            init(routers, hosts);
+            Init(routers, hosts);
             while (true) { }
         }
 
-        public static void init(List<Router> routers, ArrayList hosts)
+        public static void Init(List<Router> routers, ArrayList hosts)
         {
             
-            routers.Add(addRouter(new Dictionary<string, int> {
+            routers.Add(AddRouter(new Dictionary<string, int> {
                 {"B", 5 },
                 {"D", 45 }
-            }, "A", "1"));
+            }, "A", "1", new IPEndPoint(IPAddress.Parse("127.0.0.1"), (int)PORTS.A)));
 
-            routers.Add(addRouter(new Dictionary<string, int> {
+            routers.Add(AddRouter(new Dictionary<string, int> {
                 {"A", 5 },
                 {"C", 70 },
                 {"E", 3 }
-            }, "B", null));
+            }, "B", null, new IPEndPoint(IPAddress.Parse("127.0.0.1"), (int)PORTS.B)));
 
-            routers.Add(addRouter(new Dictionary<string, int> {
+            routers.Add(AddRouter(new Dictionary<string, int> {
                 {"B", 70 },
                 {"D", 50 },
                 {"F", 78 }
-            }, "C", null));
+            }, "C", null, new IPEndPoint(IPAddress.Parse("127.0.0.1"), (int)PORTS.C)));
 
-            routers.Add(addRouter(new Dictionary<string, int> {
+            routers.Add(AddRouter(new Dictionary<string, int> {
                 {"A", 45},
                 {"C", 50 },
                 {"E", 8 }
-            }, "D", null));
+            }, "D", null, new IPEndPoint(IPAddress.Parse("127.0.0.1"), (int)PORTS.D)));
 
-            routers.Add(addRouter(new Dictionary<string, int> {                
+            routers.Add(AddRouter(new Dictionary<string, int> {                
                 {"B", 3 },
                 {"D", 8},
                 {"F", 7 }
-            }, "E", null));
+            }, "E", null, new IPEndPoint(IPAddress.Parse("127.0.0.1"), (int)PORTS.E)));
 
-            routers.Add(addRouter(new Dictionary<string, int> {
+            routers.Add(AddRouter(new Dictionary<string, int> {
                 {"C", 78 },
                 {"E", 7}                
-            }, "F", "2"));
-            
-            hosts = new ArrayList();
-            hosts.Add(new Host("1"));
-            hosts.Add(new Host("2"));
+            }, "F", "2", new IPEndPoint(IPAddress.Parse("127.0.0.1"), (int)PORTS.F)));
 
-            if (true)
+            hosts = new ArrayList
+            {
+                new Host("1"),
+                new Host("2")
+            };
+
+            if (true)//ls or dv
             {
                 initLS(routers);
 
                 Router startRouter = new Router();
 
-                foreach (var router in routers)
-                {
-                    if (router.name == "A")
-                    {
-                        startRouter = router;
-                    }
-                }
+                startRouter = routers.Find(x => x.name == "A");
 
                 Console.WriteLine("Done");
-                Console.WriteLine(startRouter.nodes.nodes["F"].route);
+                Console.WriteLine(startRouter.rTable.entries["F"].route);
             }
         }
 
-        public static Router addRouter(Dictionary<string, int> nodes, string name, string hostName)
+        public static Router AddRouter(Dictionary<string, int> neighbours, string name, string hostName, IPEndPoint ipEndPoint)
         {
-            NodeCollection routerNodes = new NodeCollection();
+            RoutingTable routerNodes = new RoutingTable();
 
-            foreach (var node in nodes)
+            foreach (var neighbour in neighbours)
             {
-                routerNodes.nodes[node.Key].cost = node.Value;
-                routerNodes.nodes[node.Key].route = node.Key;
+                routerNodes.entries[neighbour.Key].cost = neighbour.Value;
+                routerNodes.entries[neighbour.Key].route = neighbour.Key;
             }
 
-            routerNodes.nodes.Remove(name);
+            routerNodes.entries.Remove(name);
 
-            return new Router(name, routerNodes, hostName);
+            return new Router(name, routerNodes, hostName, ipEndPoint);
         }
 
+        public static void ConnectRouters(List<Router> routers)
+        {
+            routers.Find(x => x.name == "A").Connect("B", "127.0.0.1", (int)PORTS.B);
+            routers.Find(x => x.name == "A").Connect("D", "127.0.0.1", (int)PORTS.D);
 
+            routers.Find(x => x.name == "B").Connect("A", "127.0.0.1", (int)PORTS.A);
+            routers.Find(x => x.name == "B").Connect("C", "127.0.0.1", (int)PORTS.C);
+            routers.Find(x => x.name == "B").Connect("E", "127.0.0.1", (int)PORTS.E);
+
+            routers.Find(x => x.name == "C").Connect("B", "127.0.0.1", (int)PORTS.B);
+            routers.Find(x => x.name == "C").Connect("D", "127.0.0.1", (int)PORTS.D);
+            routers.Find(x => x.name == "C").Connect("F", "127.0.0.1", (int)PORTS.F);
+
+            routers.Find(x => x.name == "D").Connect("A", "127.0.0.1", (int)PORTS.A);
+            routers.Find(x => x.name == "D").Connect("C", "127.0.0.1", (int)PORTS.C);
+            routers.Find(x => x.name == "D").Connect("E", "127.0.0.1", (int)PORTS.E);
+
+            routers.Find(x => x.name == "E").Connect("B", "127.0.0.1", (int)PORTS.B);
+            routers.Find(x => x.name == "E").Connect("D", "127.0.0.1", (int)PORTS.D);
+            routers.Find(x => x.name == "E").Connect("F", "127.0.0.1", (int)PORTS.F);
+
+            routers.Find(x => x.name == "F").Connect("C", "127.0.0.1", (int)PORTS.C);
+            routers.Find(x => x.name == "F").Connect("E", "127.0.0.1", (int)PORTS.E);
+        }
+        
         public static void initLS(List<Router> routers)
         {
-            List<Node> visited = new List<Node>();          
-            visited.Add(new Node("A", 0, ""));
+            List<Entry> visited = new List<Entry> { new Entry("A", 0, "") };
 
-            Router startRouter = new Router(); 
+            Router startRouter = new Router();
 
-            foreach (var router in routers)
-            {
-                if (router.name == "A")
-                {
-                    startRouter = router;
-                }
-            }
+            startRouter = routers.Find(x => x.name == "A");
 
-            Node currentNode = startRouter.nodes.findMinimalAdjacentNode();
+            Entry currentNode = startRouter.rTable.findMinimalAdjacentNode();
 
             while (visited.Count < 7)
-            {
-                
+            {                
                 Router currentRouter = new Router();
 
                 visited.Add(currentNode);
 
-                foreach (var router in routers)
+                currentRouter = routers.Find(router => router.name == currentNode.name);
+                
+                foreach(var entry in currentRouter.rTable.entries)
                 {
-                    if (router.name == currentNode.name)
+                    if(entry.Value.cost < INFINITY && !visited.Any(x => x.name == entry.Value.name))
                     {
-                        currentRouter = router;
-                    }
-                }
-
-                foreach(var node in currentRouter.nodes.nodes)
-                {
-                    if(node.Value.cost < INFINITY && !visited.Any(x => x.name == node.Value.name))
-                    {
-                        if(node.Value.cost + startRouter.nodes.nodes[currentNode.name].cost < startRouter.nodes.nodes[node.Value.name].cost)
+                        if(entry.Value.cost + startRouter.rTable.entries[currentNode.name].cost < startRouter.rTable.entries[entry.Value.name].cost)
                         {
-                            startRouter.nodes.nodes[node.Value.name].cost = node.Value.cost + startRouter.nodes.nodes[currentNode.name].cost;
-                            startRouter.nodes.nodes[node.Value.name].route = startRouter.nodes.nodes[currentNode.name].route + node.Value.name;
+                            int newCost = entry.Value.cost + startRouter.rTable.entries[currentNode.name].cost;
+                            string newRoute = startRouter.rTable.entries[currentNode.name].route + entry.Value.name;
+
+                            startRouter.rTable.entries[entry.Value.name].cost = newCost;
+                            startRouter.rTable.entries[entry.Value.name].route = newRoute;
 
                         }   
                     }
                 }
-                currentNode = currentRouter.nodes.findMinimalAdjacentNode();
+                currentNode = currentRouter.rTable.findMinimalAdjacentNode();
             }            
       
         }
 
-        public static  void initDV()
+        public static  void InitDV()
         {
 
         }

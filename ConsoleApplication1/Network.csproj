@@ -44,8 +44,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Network.cs" />
-    <Compile Include="Node.cs" />
-    <Compile Include="NodeCollection.cs" />
+    <Compile Include="Entry.cs" />
+    <Compile Include="RoutingTable.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Router.cs" />
   </ItemGroup>
