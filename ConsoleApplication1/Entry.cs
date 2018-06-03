@@ -1,12 +1,12 @@
-﻿namespace NodeCollectionSolution
+﻿namespace Network
 {
-    public class Node
+    public class Entry
     {
         public string name;
         public int cost;
         public string route;
 
-        public Node(string name, int cost, string route)
+        public Entry(string name, int cost, string route)
         {
             this.name = name;
             this.cost = cost;
