@@ -65,14 +65,8 @@ namespace Network
             
             if (true)//ls or dv
             {
-                InitLS(routers);
-
-                Router startRouter = new Router();
-
-                startRouter = routers.Find(x => x.name == "A");
-
-                Console.WriteLine("Done");
-                Console.WriteLine(startRouter.routingTable.entries["F"].nextHop);
+                //InitLS(routers);
+                InitDV(routers);
             }
         }
 
@@ -175,9 +169,15 @@ namespace Network
             Console.WriteLine(startRouter.routingTable.ToString());
         }
 
-        public static  void InitDV()
+        public static  void InitDV(List<Router> routers)
         {
-
+            routers[0].DiscoverNetwork("A");
+            //Thread.Sleep(10000);
+            //foreach (var router in routers)
+            //{
+            //    Console.WriteLine(router.name);
+            //    Console.WriteLine(router.routingTable.ToString());
+            //}
         }
     }
 }
