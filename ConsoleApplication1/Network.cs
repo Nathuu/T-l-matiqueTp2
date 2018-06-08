@@ -12,7 +12,7 @@ namespace Network
     class Program
     {
         public const int INFINITY = 100000; 
-        public enum PORTS { A=40000, B, C, D, E, F }
+        public enum PORTS { A=40000, B= 40100, C=40200, D=40300, E=40400, F=40500, ONE=40001, TWO=40501}
 
         static void Main(string[] args)
         {
@@ -72,7 +72,7 @@ namespace Network
                 startRouter = routers.Find(x => x.name == "A");
 
                 Console.WriteLine("Done");
-                Console.WriteLine(startRouter.rTable.entries["F"].route);
+                Console.WriteLine(startRouter.routingTable.entries["F"].nextHop);
             }
         }
 
@@ -90,9 +90,9 @@ namespace Network
             RoutingTable routerNodes = new RoutingTable();
 
             foreach (var neighbour in neighbours)
-            {
+            {                
                 routerNodes.entries[neighbour.Key].cost = neighbour.Value;
-                routerNodes.entries[neighbour.Key].route = neighbour.Key;
+                routerNodes.entries[neighbour.Key].nextHop = neighbour.Key;
             }
 
             routerNodes.entries.Remove(name);
@@ -102,6 +102,7 @@ namespace Network
 
         public static void ConnectRouters(List<Router> routers)
         {
+            routers.Find(x => x.name == "A").Connect("1", "127.0.0.1", (int)PORTS.ONE);
             routers.Find(x => x.name == "A").Connect("B", "127.0.0.1", (int)PORTS.B);
             routers.Find(x => x.name == "A").Connect("D", "127.0.0.1", (int)PORTS.D);
 
@@ -123,19 +124,30 @@ namespace Network
 
             routers.Find(x => x.name == "F").Connect("C", "127.0.0.1", (int)PORTS.C);
             routers.Find(x => x.name == "F").Connect("E", "127.0.0.1", (int)PORTS.E);
+            routers.Find(x => x.name == "F").Connect("2", "127.0.0.1", (int)PORTS.TWO);
         }
-        
+
         public static void InitLS(List<Router> routers)
         {
-            List<Entry> visited = new List<Entry> { new Entry("A", 0, "") };
+
+            foreach (var router in routers)
+            {
+                RunLsAlgorithm(router.name, routers);
+            }
+
+        }
+
+        private static void RunLsAlgorithm(string routerName, List<Router> routers)
+        {
+            List<Entry> visited = new List<Entry> { new Entry(routerName, 0, 0, "") };
 
             Router startRouter = new Router();
 
-            startRouter = routers.Find(x => x.name == "A");
+            startRouter = routers.Find(x => x.name == routerName);
 
-            Entry currentNode = startRouter.rTable.findMinimalAdjacentNode();
+            Entry currentNode = startRouter.routingTable.findMinimalDistanceNode(visited);            
 
-            while (visited.Count < 7)
+            while (visited.Count < 6)
             {                
                 Router currentRouter = new Router();
 
@@ -143,24 +155,24 @@ namespace Network
 
                 currentRouter = routers.Find(router => router.name == currentNode.name);
                 
-                foreach(var entry in currentRouter.rTable.entries)
+                foreach(var entry in currentRouter.routingTable.entries)
                 {
-                    if(entry.Value.cost < INFINITY && !visited.Any(x => x.name == entry.Value.name))
+                    if(entry.Value.cost < INFINITY && entry.Key != startRouter.name)
                     {
-                        if(entry.Value.cost + startRouter.rTable.entries[currentNode.name].cost < startRouter.rTable.entries[entry.Value.name].cost)
+                        if(entry.Value.cost + startRouter.routingTable.entries[currentNode.name].cost < startRouter.routingTable.entries[entry.Value.name].cost)
                         {
-                            int newCost = entry.Value.cost + startRouter.rTable.entries[currentNode.name].cost;
-                            string newRoute = startRouter.rTable.entries[currentNode.name].route + entry.Value.name;
+                            int newCost = entry.Value.cost + startRouter.routingTable.entries[currentNode.name].cost;
+                            string newRoute = startRouter.routingTable.entries[currentNode.name].nextHop;
 
-                            startRouter.rTable.entries[entry.Value.name].cost = newCost;
-                            startRouter.rTable.entries[entry.Value.name].route = newRoute;
+                            startRouter.routingTable.entries[entry.Value.name].cost = newCost;
+                            startRouter.routingTable.entries[entry.Value.name].nextHop = newRoute;
 
                         }   
                     }
                 }
-                currentNode = currentRouter.rTable.findMinimalAdjacentNode();
-            }            
-      
+                currentNode = currentRouter.routingTable.findMinimalDistanceNode(visited);
+            }
+            Console.WriteLine(startRouter.routingTable.ToString());
         }
 
         public static  void InitDV()

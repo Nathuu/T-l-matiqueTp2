@@ -13,20 +13,17 @@ namespace Network
 {
     public class Router
     {
-        public RoutingTable rTable;
+        public RoutingTable routingTable;
         public string hostName;
         public string name;
         public TcpListener listener;
+        TcpClient newClient;
         public Dictionary<string, TcpClient> senders;
-
-        private StreamReader SReader;
-        private StreamWriter SWriter;
-        private Boolean isConnected; 
 
         public Router(string name, RoutingTable rTable, string hostName, IPEndPoint endPoint)
         {
             this.name = name;
-            this.rTable = rTable;
+            this.routingTable = rTable;
             this.hostName = hostName;
             this.senders = new Dictionary<string, TcpClient>();
             this.listener = new TcpListener(endPoint);
@@ -37,17 +34,12 @@ namespace Network
         public Router()
         {
         }
-
-        public void NegotiateNetwork()
-        {
-
-        }
-
+        
         public void Listen()
         {
             Console.WriteLine("Router: " + name + " now listening");
             while (true) { 
-                TcpClient newClient = listener.AcceptTcpClient();
+                newClient = listener.AcceptTcpClient();
                 Thread t = new Thread(new ParameterizedThreadStart(HandleClient));
                 t.Start(newClient);
             }
@@ -55,76 +47,59 @@ namespace Network
 
         public void Connect(string endPointName, string ipAdress, int port)
         {
-            TcpClient client = new TcpClient("127.0.0.1", port);            
-            senders.Add(endPointName, client);
-
-            //HandleCommunication(client);
+            try
+            {
+                TcpClient client = new TcpClient("127.0.0.1", port);
+                senders.Add(endPointName, client);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                Connect(endPointName, ipAdress, port);
+            }
         }
-
-        /** ref **/ 
-        //public void HandleCommunication(TcpClient client)
-        //{
-        //    foreach(var sender in senders)
-        //    {
-        //        if(name == "A") {
-        //            Console.WriteLine("Sending to: " + sender.Key);
-        //            SReader = new StreamReader(sender.Value.GetStream(), Encoding.ASCII);
-        //            SWriter = new StreamWriter(sender.Value.GetStream(), Encoding.ASCII);
-
-        //            isConnected = true;
-        //            String sData = "hello";
-           
-        //            //sData = Console.ReadLine();
-
-        //            Console.WriteLine(name + " is sending: " + sData);
-
-        //            // write data and make sure to flush, or the buffer will continue to 
-        //            // grow, and your data might not be sent when you want it, and will
-        //            // only be sent once the buffer is filled.
-        //            SWriter.WriteLine(sData);
-        //            SWriter.Flush();
-
-        //            // if you want to receive anything
-        //            //String sDataIncomming = SReader.ReadLine();
-        //        }
-        //    }
-        //}
-
-        // ref
+        
         // On recoit un message, on l'analyse, et on l'envoie sur la bonne route 
         public void HandleClient(object obj)
         {
-            // retrieve client from parameter passed to thread
             TcpClient client = (TcpClient)obj;
-
-            // sets two streams
-            StreamWriter sWriter = new StreamWriter(client.GetStream(), Encoding.ASCII);
             StreamReader sReader = new StreamReader(client.GetStream(), Encoding.ASCII);
-            // you could use the NetworkStream to read and write, 
-            // but there is no forcing flush, even when requested
 
             Boolean bClientConnected = true;
-            String sData = null;
+            String message = null;
 
             while (bClientConnected)
-            {   
-                sData = sReader.ReadLine();             
-                Console.WriteLine(name + " is recieving: " + sData);
-                // writer envoie au bon router.
-                // comment ecrire un header
-                // https://stackoverflow.com/questions/19523088/create-http-request-using-tcpclient/
+            {
+                message = sReader.ReadLine();
+                string[] splittedMessaege = message.Split('@');
+                string header1 = splittedMessaege[0];
+                string header2 = splittedMessaege[1];
+                string data = splittedMessaege[2];
+
+                Console.WriteLine(name + " is recieving: " + data + " with final destination: " + header1 + " " + header2);
+                Console.WriteLine(routingTable.ToString());
+
+                KeyValuePair<string, Entry> entry = routingTable.entries.FirstOrDefault(x => x.Value.port == int.Parse(header1));
+
+                string nextHop;
+
+                if (entry.Equals(default(KeyValuePair<string, Entry>)))
+                {
+                    nextHop = header2;
+                }
+                else
+                {
+                    nextHop = routingTable.entries.FirstOrDefault(x => x.Value.port == int.Parse(header1)).Value.nextHop;
+                }             
+
+                TcpClient nextClient = senders[nextHop];
+                StreamWriter sWriter = new StreamWriter(nextClient.GetStream(), Encoding.ASCII);
+                
+                sWriter.WriteLine(message);
+                sWriter.Flush();
+
             }
         }
 
-        public void SendMessage()
-        {
-
-        }
-
-        internal void Recieve()
-        {
-            Console.WriteLine(name);
-            Thread.Sleep(10000);
-        }
     }
 }
