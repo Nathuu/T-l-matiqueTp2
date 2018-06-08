@@ -43,6 +43,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Constant.cs" />
     <Compile Include="Network.cs" />
     <Compile Include="Entry.cs" />
     <Compile Include="RoutingTable.cs" />

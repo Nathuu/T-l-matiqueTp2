@@ -6,13 +6,15 @@ using HostSolution;
 using System.Net.Sockets;
 using System.Net;
 using System.Threading;
+using Network;
 
 namespace Network
 {
-    class Program
+    public class Program
     {
-        public const int INFINITY = 100000; 
-        public enum PORTS { A=40000, B, C, D, E, F }
+        public enum PORTS { A=40000, B, C, D, E, F, ONE, TWO }
+        public enum SUBNETWORK { ONEA= 40000, AB= 40100, BC=40200, AD = 40300, CF =40400,  DC=40500, BE=40600, DE=40700, EF=40800, FTWO=40900 }
+        public enum ROUTINGMODE { LS = 1, DV = 2 }
 
         static void Main(string[] args)
         {
@@ -25,46 +27,10 @@ namespace Network
 
         public static void Init(List<Router> routers, ArrayList hosts)
         {
-            
-            routers.Add(AddRouter(new Dictionary<string, int> {
-                {"B", 5 },
-                {"D", 45 }
-            }, "A", "1", new IPEndPoint(IPAddress.Parse("127.0.0.1"), (int)PORTS.A)));
-
-            routers.Add(AddRouter(new Dictionary<string, int> {
-                {"A", 5 },
-                {"C", 70 },
-                {"E", 3 }
-            }, "B", null, new IPEndPoint(IPAddress.Parse("127.0.0.1"), (int)PORTS.B)));
-
-            routers.Add(AddRouter(new Dictionary<string, int> {
-                {"B", 70 },
-                {"D", 50 },
-                {"F", 78 }
-            }, "C", null, new IPEndPoint(IPAddress.Parse("127.0.0.1"), (int)PORTS.C)));
-
-            routers.Add(AddRouter(new Dictionary<string, int> {
-                {"A", 45},
-                {"C", 50 },
-                {"E", 8 }
-            }, "D", null, new IPEndPoint(IPAddress.Parse("127.0.0.1"), (int)PORTS.D)));
-
-            routers.Add(AddRouter(new Dictionary<string, int> {                
-                {"B", 3 },
-                {"D", 8},
-                {"F", 7 }
-            }, "E", null, new IPEndPoint(IPAddress.Parse("127.0.0.1"), (int)PORTS.E)));
-
-            routers.Add(AddRouter(new Dictionary<string, int> {
-                {"C", 78 },
-                {"E", 7}                
-            }, "F", "2", new IPEndPoint(IPAddress.Parse("127.0.0.1"), (int)PORTS.F)));
-
-            RouterStartListening(routers);
-            ConnectRouters(routers);
-            
+           
             if (true)//ls or dv
             {
+                initRouters(routers, (int)ROUTINGMODE.LS);
                 InitLS(routers);
 
                 Router startRouter = new Router();
@@ -72,95 +38,237 @@ namespace Network
                 startRouter = routers.Find(x => x.name == "A");
 
                 Console.WriteLine("Done");
-                Console.WriteLine(startRouter.rTable.entries["F"].route);
+                //Console.WriteLine(startRouter.routingTable.entries["F"].nextHop);
             }
+        }
+
+        public static void initRouters(List<Router> routers, int routingMode)
+        {
+            Router router = CreateRouter(new List<Entry> {
+                {new Entry(SUBNETWORK.ONEA, 0, "")},
+                {new Entry(SUBNETWORK.AB, 0, "")},
+                {new Entry(SUBNETWORK.AD, 0, "")},
+                {new Entry(SUBNETWORK.BC, 5, "B")},
+                {new Entry(SUBNETWORK.BE, 5, "B")},
+                {new Entry(SUBNETWORK.DC, 45, "D")},
+                {new Entry(SUBNETWORK.DE, 45, "D")}
+            }, "A", "1", routingMode);
+
+            router.initListener(new IPEndPoint(IPAddress.Loopback, (int)SUBNETWORK.ONEA + 2));
+            router.initListener(new IPEndPoint(IPAddress.Loopback, (int)SUBNETWORK.AB + 1));
+            router.initListener(new IPEndPoint(IPAddress.Loopback, (int)SUBNETWORK.AD + 1));
+            routers.Add(router);
+
+            router = CreateRouter(new List<Entry> {
+                {new Entry(SUBNETWORK.AB, 0, "")},
+                {new Entry(SUBNETWORK.BC, 0, "")},
+                {new Entry(SUBNETWORK.BE, 0, "")},
+                {new Entry(SUBNETWORK.ONEA, 5, "A")},
+                {new Entry(SUBNETWORK.AD, 5, "A")},
+                { new Entry(SUBNETWORK.CF, 70, "C")},
+                { new Entry(SUBNETWORK.DC, 70, "C")},
+                {new Entry(SUBNETWORK.EF, 3, "E")},
+                {new Entry(SUBNETWORK.DE, 3, "E")},
+            }, "B", null, routingMode);
+            
+            router.initListener(new IPEndPoint(IPAddress.Loopback, (int)SUBNETWORK.AB + 2));
+            router.initListener(new IPEndPoint(IPAddress.Loopback, (int)SUBNETWORK.BC + 1));
+            router.initListener(new IPEndPoint(IPAddress.Loopback, (int)SUBNETWORK.BE + 1));
+            routers.Add(router);
+
+            router = CreateRouter(new List<Entry> {
+                {new Entry(SUBNETWORK.BC, 0, "")},
+                {new Entry(SUBNETWORK.DC, 0, "")},
+                {new Entry(SUBNETWORK.CF, 0, "")},
+                {new Entry(SUBNETWORK.AB, 70, "B")},
+                {new Entry(SUBNETWORK.BE, 70, "B")},
+                {new Entry(SUBNETWORK.AD, 50, "D")},
+                {new Entry(SUBNETWORK.DE, 50, "D")},
+                {new Entry(SUBNETWORK.EF, 78, "F")},
+                {new Entry(SUBNETWORK.FTWO, 78, "F")},
+            }, "C", null, routingMode);
+            
+            router.initListener(new IPEndPoint(IPAddress.Loopback, (int)SUBNETWORK.BC + 2));
+            router.initListener(new IPEndPoint(IPAddress.Loopback, (int)SUBNETWORK.DC + 2));
+            router.initListener(new IPEndPoint(IPAddress.Loopback, (int)SUBNETWORK.CF + 1));
+            routers.Add(router);
+
+            router = CreateRouter(new List<Entry> {
+                {new Entry(SUBNETWORK.AD, 0, "")},
+                {new Entry(SUBNETWORK.DC, 0, "")},
+                {new Entry(SUBNETWORK.DE, 0, "")},
+                {new Entry(SUBNETWORK.AB, 45, "A")},
+                {new Entry(SUBNETWORK.ONEA, 45, "A")},
+                {new Entry(SUBNETWORK.BC, 50, "C")},
+                {new Entry(SUBNETWORK.CF, 50, "C")},
+                {new Entry(SUBNETWORK.BE, 8, "E")},
+                {new Entry(SUBNETWORK.EF, 8, "E")}
+            }, "D", null, routingMode);
+
+            router.initListener(new IPEndPoint(IPAddress.Loopback, (int)SUBNETWORK.AD + 2));
+            router.initListener(new IPEndPoint(IPAddress.Loopback, (int)SUBNETWORK.DC + 1));
+            router.initListener(new IPEndPoint(IPAddress.Loopback, (int)SUBNETWORK.DE + 1));
+            routers.Add(router);
+
+            router = CreateRouter(new List<Entry> {
+                {new Entry(SUBNETWORK.BE, 0, "")},
+                {new Entry(SUBNETWORK.DE, 0, "")},
+                {new Entry(SUBNETWORK.EF, 0, "")},
+                {new Entry(SUBNETWORK.AB, 3, "B")},
+                {new Entry(SUBNETWORK.BC, 3, "B")},
+                {new Entry(SUBNETWORK.AD, 8, "D")},
+                {new Entry(SUBNETWORK.DC, 8, "D")},
+                {new Entry(SUBNETWORK.CF, 7, "F")},
+                {new Entry(SUBNETWORK.FTWO, 7, "F")},
+            }, "E", null, routingMode);
+
+            router.initListener(new IPEndPoint(IPAddress.Loopback, (int)SUBNETWORK.DE + 2));
+            router.initListener(new IPEndPoint(IPAddress.Loopback, (int)SUBNETWORK.BE + 2));
+            router.initListener(new IPEndPoint(IPAddress.Loopback, (int)SUBNETWORK.EF + 1));
+            routers.Add(router);
+
+            router = CreateRouter(new List<Entry> {
+                {new Entry(SUBNETWORK.CF, 0, "")},
+                {new Entry(SUBNETWORK.EF, 0, "")},
+                {new Entry(SUBNETWORK.FTWO, 0, "")},
+                {new Entry(SUBNETWORK.DC, 78, "C")},
+                {new Entry(SUBNETWORK.BC, 78, "C")},
+                {new Entry(SUBNETWORK.BE, 7, "E")},
+                {new Entry(SUBNETWORK.DE, 7, "E")},
+            }, "F", "2", routingMode);
+            
+            router.initListener(new IPEndPoint(IPAddress.Loopback, (int)SUBNETWORK.CF + 2));
+            router.initListener(new IPEndPoint(IPAddress.Loopback, (int)SUBNETWORK.EF + 2));
+            router.initListener(new IPEndPoint(IPAddress.Loopback, (int)SUBNETWORK.FTWO + 1));
+            routers.Add(router);
+
+            RouterStartListening(routers);
+            ConnectRouters(routers);
         }
 
         private static void RouterStartListening(List<Router> routers)
         {
             foreach(var router in routers)
             {
-                Thread th = new Thread(router.Listen);
-                th.Start();
+                foreach(var listener in router.listeners)
+                {
+                    Thread th = new Thread(() => router.Listen(listener.Key));
+                    th.Start();
+                }
+                
+                
             }
         }
 
-        public static Router AddRouter(Dictionary<string, int> neighbours, string name, string hostName, IPEndPoint ipEndPoint)
+        public static Router CreateRouter(List<Entry> neighbours, string name, string hostName, int routingMode)
         {
-            RoutingTable routerNodes = new RoutingTable();
+            RoutingTable routingTable;
+
+            if (routingMode == (int)ROUTINGMODE.DV)
+            {
+                routingTable = new RoutingTable();
+            }
+            else
+            {
+                routingTable = new RoutingTable(name);
+            }
+            
 
             foreach (var neighbour in neighbours)
             {
-                routerNodes.entries[neighbour.Key].cost = neighbour.Value;
-                routerNodes.entries[neighbour.Key].route = neighbour.Key;
+                routingTable.entries[neighbour.name] = neighbour;
             }
 
-            routerNodes.entries.Remove(name);
-
-            return new Router(name, routerNodes, hostName, ipEndPoint);
+            return new Router(name, routingTable, hostName);
         }
 
         public static void ConnectRouters(List<Router> routers)
         {
-            routers.Find(x => x.name == "A").Connect("B", "127.0.0.1", (int)PORTS.B);
-            routers.Find(x => x.name == "A").Connect("D", "127.0.0.1", (int)PORTS.D);
+            routers.Find(x => x.name == "A").Connect("1", "127.0.0.1", (int)SUBNETWORK.ONEA + 1);
+            routers.Find(x => x.name == "A").Connect("B", "127.0.0.1", (int)SUBNETWORK.AB + 2);
+            routers.Find(x => x.name == "A").Connect("D", "127.0.0.1", (int)SUBNETWORK.AD + 2);
 
-            routers.Find(x => x.name == "B").Connect("A", "127.0.0.1", (int)PORTS.A);
-            routers.Find(x => x.name == "B").Connect("C", "127.0.0.1", (int)PORTS.C);
-            routers.Find(x => x.name == "B").Connect("E", "127.0.0.1", (int)PORTS.E);
+            routers.Find(x => x.name == "B").Connect("A", "127.0.0.1", (int)SUBNETWORK.AB + 1);
+            routers.Find(x => x.name == "B").Connect("C", "127.0.0.1", (int)SUBNETWORK.BC + 2);
+            routers.Find(x => x.name == "B").Connect("E", "127.0.0.1", (int)SUBNETWORK.BE + 2);
 
-            routers.Find(x => x.name == "C").Connect("B", "127.0.0.1", (int)PORTS.B);
-            routers.Find(x => x.name == "C").Connect("D", "127.0.0.1", (int)PORTS.D);
-            routers.Find(x => x.name == "C").Connect("F", "127.0.0.1", (int)PORTS.F);
+            routers.Find(x => x.name == "C").Connect("B", "127.0.0.1", (int)SUBNETWORK.BC + 1);
+            routers.Find(x => x.name == "C").Connect("D", "127.0.0.1", (int)SUBNETWORK.DC + 1);
+            routers.Find(x => x.name == "C").Connect("F", "127.0.0.1", (int)SUBNETWORK.CF + 2);
 
-            routers.Find(x => x.name == "D").Connect("A", "127.0.0.1", (int)PORTS.A);
-            routers.Find(x => x.name == "D").Connect("C", "127.0.0.1", (int)PORTS.C);
-            routers.Find(x => x.name == "D").Connect("E", "127.0.0.1", (int)PORTS.E);
+            routers.Find(x => x.name == "D").Connect("A", "127.0.0.1", (int)SUBNETWORK.AD + 1);
+            routers.Find(x => x.name == "D").Connect("C", "127.0.0.1", (int)SUBNETWORK.DC + 2);
+            routers.Find(x => x.name == "D").Connect("E", "127.0.0.1", (int)SUBNETWORK.DE + 2);
 
-            routers.Find(x => x.name == "E").Connect("B", "127.0.0.1", (int)PORTS.B);
-            routers.Find(x => x.name == "E").Connect("D", "127.0.0.1", (int)PORTS.D);
-            routers.Find(x => x.name == "E").Connect("F", "127.0.0.1", (int)PORTS.F);
+            routers.Find(x => x.name == "E").Connect("B", "127.0.0.1", (int)SUBNETWORK.BE + 1);
+            routers.Find(x => x.name == "E").Connect("D", "127.0.0.1", (int)SUBNETWORK.DE + 1);
+            routers.Find(x => x.name == "E").Connect("F", "127.0.0.1", (int)SUBNETWORK.EF + 2);
 
-            routers.Find(x => x.name == "F").Connect("C", "127.0.0.1", (int)PORTS.C);
-            routers.Find(x => x.name == "F").Connect("E", "127.0.0.1", (int)PORTS.E);
+            routers.Find(x => x.name == "F").Connect("C", "127.0.0.1", (int)SUBNETWORK.CF + 1);
+            routers.Find(x => x.name == "F").Connect("E", "127.0.0.1", (int)SUBNETWORK.EF + 1);
+            routers.Find(x => x.name == "F").Connect("2", "127.0.0.1", (int)SUBNETWORK.FTWO + 2);
         }
         
         public static void InitLS(List<Router> routers)
         {
-            List<Entry> visited = new List<Entry> { new Entry("A", 0, "") };
 
+            //foreach(var router in routers)
+            //{
+            //    RunLsAlgorithm(router.name, routers);
+            //}
+            RunLsAlgorithm("A", routers);
+
+        }
+
+        private static void RunLsAlgorithm(string routerName, List<Router> routers)
+        {
+            List<Entry> visited = new List<Entry>();            
             Router startRouter = new Router();
 
-            startRouter = routers.Find(x => x.name == "A");
+            startRouter = routers.Find(x => x.name == routerName);
 
-            Entry currentNode = startRouter.rTable.findMinimalAdjacentNode();
+            foreach (var entry in startRouter.routingTable.entries)
+            {
+                if (entry.Value.cost == 0)
+                {
+                    visited.Add(entry.Value);
+                }
+            }
+            
 
-            while (visited.Count < 7)
-            {                
+            Entry currentNode = startRouter.routingTable.findMinimalAdjacentNode();
+
+            Console.WriteLine("Router " + startRouter.name + " state before LS");
+            Console.WriteLine(startRouter.routingTable.ToString());
+                            
+            while (visited.Count < 11)
+            {
                 Router currentRouter = new Router();
 
                 visited.Add(currentNode);
 
-                currentRouter = routers.Find(router => router.name == currentNode.name);
-                
-                foreach(var entry in currentRouter.rTable.entries)
+                currentRouter = routers.Find(router => router.name == currentNode.nextHop);
+
+                foreach (var entry in currentRouter.routingTable.entries)
                 {
-                    if(entry.Value.cost < INFINITY && !visited.Any(x => x.name == entry.Value.name))
+                    if (entry.Value.cost < Constant.INFINITY
+                        && !visited.Any(x => x.name == entry.Value.name)
+                        && entry.Value.cost > 0)
                     {
-                        if(entry.Value.cost + startRouter.rTable.entries[currentNode.name].cost < startRouter.rTable.entries[entry.Value.name].cost)
+
+                        if (entry.Value.cost + startRouter.routingTable.entries[currentNode.name].cost < startRouter.routingTable.entries[entry.Value.name].cost)
                         {
-                            int newCost = entry.Value.cost + startRouter.rTable.entries[currentNode.name].cost;
-                            string newRoute = startRouter.rTable.entries[currentNode.name].route + entry.Value.name;
+                            int newCost = entry.Value.cost + startRouter.routingTable.entries[currentNode.name].cost;
 
-                            startRouter.rTable.entries[entry.Value.name].cost = newCost;
-                            startRouter.rTable.entries[entry.Value.name].route = newRoute;
-
-                        }   
+                            startRouter.routingTable.entries[entry.Value.name].cost = newCost;
+                            startRouter.routingTable.entries[entry.Value.name].nextHop = currentNode.nextHop;
+                        }
                     }
                 }
-                currentNode = currentRouter.rTable.findMinimalAdjacentNode();
-            }            
-      
+                currentNode = currentRouter.routingTable.findMinimalAdjacentNode();
+            }
+            Console.WriteLine("Router " + startRouter.name + " state after LS");
+            Console.WriteLine(startRouter.routingTable.ToString());
         }
 
         public static  void InitDV()
