@@ -9,14 +9,12 @@ namespace HostSolution
 {
     public class Program
     {
-        enum MODE { Sending = 1, Recieving };
-
         static void Main(string[] args)
         {
             Host host;
 
             Console.Write("Enter your hostname: ");
-            string hostName = Console.ReadLine();
+            string hostName = args[0];
             int port = 0;
             string destination = "";
             if (hostName == "1")
@@ -34,9 +32,7 @@ namespace HostSolution
             Console.WriteLine("Attempting to connect to 127.0.0.1:" + host.port + " ...");
 
             host.ConnectToRouter();
-
-            //1) start connection with router
-            //2) Send Message to destation (2)
+            
             if (hostName == "1")
             {
                 host.HelloWorld();

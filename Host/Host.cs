@@ -71,7 +71,7 @@ namespace HostSolution
 
         public void HelloWorld()
         {
-            System.Threading.Thread.Sleep(10000);
+            System.Threading.Thread.Sleep(3000);
             Console.WriteLine("Now Sending message...");
             SWriter.WriteLine("40500@2@Hello World");
             SWriter.Flush();
