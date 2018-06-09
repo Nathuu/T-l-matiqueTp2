@@ -108,24 +108,25 @@ namespace Network
                     networkEstablished = true;
                 }
                 else {
-                    string header1 = splittedMessaege[0];
-                    string header2 = splittedMessaege[1];
+                    string destinationNetwork = splittedMessaege[0];
+                    string destinationHost = splittedMessaege[1];
                     string data = splittedMessaege[2];
+                    string fullAddress = destinationNetwork.Remove(destinationNetwork.Length - 1, 1) + destinationHost;
 
-                    Console.WriteLine(name + " is recieving: " + data + " with final destination: " + header1 + " " + header2);
+                    Console.WriteLine(name + " is recieving: " + data + " with final destination: " + fullAddress);
                     Console.WriteLine(routingTable.ToString());
 
-                    KeyValuePair<string, Entry> entry = routingTable.entries.FirstOrDefault(x => x.Value.port == int.Parse(header1));
+                    KeyValuePair<string, Entry> entry = routingTable.entries.FirstOrDefault(x => x.Value.port == int.Parse(destinationNetwork));
 
                     string nextHop;
 
                     if (entry.Equals(default(KeyValuePair<string, Entry>)))
                     {
-                        nextHop = header2;
+                        nextHop = destinationHost;
                     }
                     else
                     {
-                        nextHop = routingTable.entries.FirstOrDefault(x => x.Value.port == int.Parse(header1)).Value.nextHop;
+                        nextHop = routingTable.entries.FirstOrDefault(x => x.Value.port == int.Parse(destinationNetwork)).Value.nextHop;
                     }             
 
                     TcpClient nextClient = senders[nextHop];
